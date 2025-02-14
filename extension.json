@@ -1,0 +1,18 @@
+{
+    "builtin": "False",
+    "default_enabled": "True",
+    "type": "extension",
+    "rocket_mode_compatible": "True",
+    "name": "Scholten BIM",
+    "description": "Set of custom tools.",
+    "author": "Dave Scholten",
+    "author_profile": "https://www.linkedin.com/in/dave-scholten/",
+    "url": "https://github.com/ScholtenBIMConsultancy/ScholtenBIM.git",
+    "website": "https://www.scholten-bimconsultancy.nl",
+    "image": "",
+    "templates": {
+        "author": "",
+        "docpath": ""
+    },
+    "dependencies": []
+}
