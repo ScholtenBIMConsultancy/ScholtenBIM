@@ -45,6 +45,11 @@ from System.Windows.Forms import Form, Label, TextBox, Button, DialogResult, Mes
 doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
 
+# Functie om de schaal van de actieve view uit te lezen
+def get_active_view_scale(doc):
+    active_view = doc.ActiveView
+    return active_view.Scale
+
 class DistanceForm(Form):
     def __init__(self):
         self.Text = "Change dimension offset | Scholten BIM Consultancy"
@@ -66,7 +71,7 @@ class DistanceForm(Form):
         self.textBox.Top = 50
         self.textBox.Left = 20
         self.textBox.Width = 300
-        self.textBox.Text = "200"  # Default waarde instellen op 200 mm
+        self.textBox.Text = "4"  # Default waarde instellen op 4 mm
         self.Controls.Add(self.textBox)
 
         self.apply_button = Button()
@@ -85,10 +90,10 @@ class DistanceForm(Form):
 
     def on_apply_button_click(self, sender, event):
         try:
-            self.distance_value = float(self.textBox.Text) / 304.8  # Omzetten van mm naar feet
+            self.distance_value = float(self.textBox.Text)  # Opslaan als mm zonder omrekening
         except ValueError:
-            MessageBox.Show("Ongeldige invoer. De standaardwaarde van 200 mm wordt gebruikt.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            self.distance_value = 200 / 304.8  # Default waarde van 200 mm omzetten naar feet
+            MessageBox.Show("Ongeldige invoer. De standaardwaarde van 4 mm wordt gebruikt.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            self.distance_value = 4  # Default waarde van 4 mm
         self.DialogResult = DialogResult.OK
         self.Close()
 
@@ -135,8 +140,8 @@ if shift_pressed:
         distance_value = form.distance_value
         save_distance_value(distance_value)
     else:
-        MessageBox.Show("Ongeldige invoer. De standaardwaarde van 200 mm wordt gebruikt.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-        distance_value = 200 / 304.8  # Default waarde van 200 mm omzetten naar feet
+        MessageBox.Show("Ongeldige invoer. De standaardwaarde van 4 mm wordt gebruikt.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        distance_value = 4  # Default waarde van 4 mm
 else:
     distance_value = load_distance_value()
     if distance_value is None:
@@ -167,29 +172,31 @@ else:
         MessageBox.Show("Sommige geselecteerde dimensies zijn niet horizontaal of verticaal en worden uitgesloten. \n\nDit wordt in een volgende versie verholpen.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
 
     def adjust_text_position(dimension):
+        scale = get_active_view_scale(doc)  # Schaal hier ophalen
+        distance_in_feet = (distance_value * scale) / 304.8  # Omzetten van mm naar feet en vermenigvuldigen met schaal
         if dimension.NumberOfSegments >= 2:
-            adjust_multiple_segments(dimension)
+            adjust_multiple_segments(dimension, distance_in_feet)
         else:
-            adjust_single_segment(dimension)
+            adjust_single_segment(dimension, distance_in_feet)
 
-    def adjust_single_segment(dimension):
+    def adjust_single_segment(dimension, distance_in_feet):
         dimension.ResetTextPosition()
         text_position = dimension.TextPosition
         if is_horizontal(dimension):
-            new_position = XYZ(text_position.X, text_position.Y - distance_value, text_position.Z)
+            new_position = XYZ(text_position.X, text_position.Y - distance_in_feet, text_position.Z)
         else:
-            new_position = XYZ(text_position.X + distance_value, text_position.Y, text_position.Z)
+            new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
         dimension.TextPosition = new_position
         doc.Regenerate()  # Zorg ervoor dat de nieuwe positie wordt toegepast
 
-    def adjust_multiple_segments(dimension):
+    def adjust_multiple_segments(dimension, distance_in_feet):
         for segment in dimension.Segments:
             segment.ResetTextPosition()
             text_position = segment.TextPosition
             if is_horizontal(dimension):
-                new_position = XYZ(text_position.X, text_position.Y - distance_value, text_position.Z)
+                new_position = XYZ(text_position.X, text_position.Y - distance_in_feet, text_position.Z)
             else:
-                new_position = XYZ(text_position.X + distance_value, text_position.Y, text_position.Z)
+                new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
             segment.TextPosition = new_position
         doc.Regenerate()  # Zorg ervoor dat de nieuwe positie wordt toegepast
 
