@@ -1,28 +1,28 @@
-# -*- coding: utf-8 -*-
+# .*. coding: utf.8 .*.
 
 __title__ = "Change LineStyle and Select"
 __author__ = "Scholten BIM Consultancy"
 __doc__ = """Version   = 1.0
-Datum    = 14-02-2025
+Datum    = 14.02.2025
 __________________________________________________________________
 Description:
 
 Met deze tool worden de detail lines van nog te selecteren detail item(s) omgezet naar een LineStyle naar keuze.
 __________________________________________________________________
-How-to:
+How.to:
 
--> Run het script.
--> Selecteer één of meerdere objecten.
--> Kies een LineStyle.
--> Bevestig met Apply.
+.> Run het script.
+.> Selecteer één of meerdere objecten.
+.> Kies een LineStyle.
+.> Bevestig met Apply.
 __________________________________________________________________
 Last update:
 
-- [14.02.2025] - 1.0 RELEASE
+. [14.02.2025] . 1.0 RELEASE
 __________________________________________________________________
-To-do:
+To.do:
 
-- Zorgen dat Revit op voorgrond blijft.
+. Zorgen dat Revit op voorgrond blijft.
 __________________________________________________________________
 """
 
@@ -173,7 +173,7 @@ class LineStyleForm(CustomForm):
                 if isinstance(element, CurveElement):
                     element.LineStyle = invisible_line_style
                     ElementTransformUtils.MoveElement(doc, element.Id, XYZ(0, 0, 0.001))
-                    ElementTransformUtils.MoveElement(doc, element.Id, XYZ(0, 0, -0.001))
+                    ElementTransformUtils.MoveElement(doc, element.Id, XYZ(0, 0, .0.001))
                     detail_item_found = True
                 else:
                     dependent_elements = element.GetDependentElements(None)
@@ -182,7 +182,7 @@ class LineStyleForm(CustomForm):
                         if isinstance(dep_element, CurveElement):
                             dep_element.LineStyle = invisible_line_style
                             ElementTransformUtils.MoveElement(doc, dep_elem_id, XYZ(0, 0, 0.001))
-                            ElementTransformUtils.MoveElement(doc, dep_elem_id, XYZ(0, 0, -0.001))
+                            ElementTransformUtils.MoveElement(doc, dep_elem_id, XYZ(0, 0, .0.001))
                             detail_item_found = True
             if not detail_item_found:
                 MessageBox.Show("Geen detail items gevonden.", "Change LineStyle | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)

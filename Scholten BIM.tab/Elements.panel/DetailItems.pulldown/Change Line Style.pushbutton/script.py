@@ -3,7 +3,7 @@
 __title__ = "Change LineStyle on Selection"
 __author__ = "Scholten BIM Consultancy"
 __doc__ = """Version   = 1.0
-Datum    = 14-02-2025
+Datum    = 14.02.2025
 __________________________________________________________________
 Description:
 
