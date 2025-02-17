@@ -3,7 +3,7 @@
 __title__ = "Copy Parameters to Parameters From Link"
 __author__ = "Scholten BIM Consultancy"
 __doc__ = """Version   = 1.2
-Datum    = 20.12.2024
+Datum    = 20.12.2024 
 __________________________________________________________________
 Description:
 SHIFT-CLICK to display options.

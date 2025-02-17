@@ -8,11 +8,11 @@ __________________________________________________________________
 Description:
 SHIFT-CLICK to display options.
 
-Met deze tool kan je parameter van een object uit je huidige model kopieren naar een ander object uit je huidige model.
+Met deze tool kan je een parameter van een object uit je huidige model kopieren naar andere parameters van een ander object uit je huidige model.
 Houdt de Shift knop ingedrukt bij het uitvoeren van deze actie en je kan de uit te lezen en weg te schrijven parameter aanpassen.
 __________________________________________________________________
 How-to:
-
+ 
 -> Run het script.
 __________________________________________________________________
 Last update:
@@ -65,50 +65,54 @@ config = load_config()
 
 try:
     if (Control.ModifierKeys & Keys.Shift) == Keys.Shift:
-        # Vraag de gebruiker om een object te selecteren voor het uitlezen van parameters
-        MessageBox.Show("Selecteer een object om de parameters uit te lezen.", "Informatie", MessageBoxButtons.OK, MessageBoxIcon.Question)
-        selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer een object om de parameters uit te lezen.")
-        element = doc.GetElement(selected_ref.ElementId)
+        try:
+            # Vraag de gebruiker om een object te selecteren voor het uitlezen van parameters
+            MessageBox.Show("Selecteer een object om de parameters uit te lezen.", "Informatie", MessageBoxButtons.OK, MessageBoxIcon.Question)
+            selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer een object om de parameters uit te lezen.")
+            element = doc.GetElement(selected_ref.ElementId)
 
-        # Lees de parameters van het geselecteerde element uit
-        parameters = element.Parameters
-        param_names = [param.Definition.Name for param in parameters]
-        param_names.sort()  # Sorteer de parameters alfabetisch
+            # Lees de parameters van het geselecteerde element uit
+            parameters = element.Parameters
+            param_names = [param.Definition.Name for param in parameters]
+            param_names.sort()  # Sorteer de parameters alfabetisch
 
-        # Voeg "Handmatig invoeren" bovenaan de lijst toe
-        param_names.insert(0, "Handmatig invoeren...")
+            # Voeg "Handmatig invoeren" bovenaan de lijst toe
+            param_names.insert(0, "Handmatig invoeren...")
 
-        # Maak een pulldown menu met de parameters (enkelvoudige selectie)
-        read_param_name = forms.SelectFromList.show(param_names, title="Selecteer een parameter om uit te lezen", button_name="Selecteer", multiselect=False)
-        if read_param_name == "Handmatig invoeren...":
-            read_param_name = forms.ask_for_string(prompt="Voer de naam van de parameter in om uit te lezen:", title="Handmatige invoer")
+            # Maak een pulldown menu met de parameters (enkelvoudige selectie)
+            read_param_name = forms.SelectFromList.show(param_names, title="Selecteer een parameter om uit te lezen", button_name="Selecteer", multiselect=False)
+            if read_param_name == "Handmatig invoeren...":
+                read_param_name = forms.ask_for_string(prompt="Voer de naam van de parameter in om uit te lezen:", title="Handmatige invoer")
 
-        # Vraag de gebruiker om een ander object te selecteren voor het wegschrijven van parameters
-        MessageBox.Show("Selecteer een ander object om de parameters naar te schrijven.", "Informatie", MessageBoxButtons.OK, MessageBoxIcon.Question)
-        selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer een ander object om de parameters naar te schrijven.")
-        target_element = doc.GetElement(selected_ref.ElementId)
+            # Vraag de gebruiker om een ander object te selecteren voor het wegschrijven van parameters
+            MessageBox.Show("Selecteer een ander object om de parameters naar te schrijven.", "Informatie", MessageBoxButtons.OK, MessageBoxIcon.Question)
+            selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer een ander object om de parameters naar te schrijven.")
+            target_element = doc.GetElement(selected_ref.ElementId)
 
-        # Lees de parameters van het geselecteerde element uit
-        parameters = target_element.Parameters
-        write_param_names = [param.Definition.Name for param in parameters if not param.IsReadOnly]
-        write_param_names.sort()  # Sorteer de parameters alfabetisch
+            # Lees de parameters van het geselecteerde element uit
+            parameters = target_element.Parameters
+            write_param_names = [param.Definition.Name for param in parameters if not param.IsReadOnly]
+            write_param_names.sort()  # Sorteer de parameters alfabetisch
 
-        # Voeg "Handmatig invoeren" bovenaan de lijst toe
-        write_param_names.insert(0, "Handmatig invoeren...")
+            # Voeg "Handmatig invoeren" bovenaan de lijst toe
+            write_param_names.insert(0, "Handmatig invoeren...")
 
-        # Maak een pulldown menu met de parameters (meervoudige selectie)
-        write_param_names = forms.SelectFromList.show(write_param_names, title="Selecteer parameters om naar te schrijven", button_name="Selecteer", multiselect=True)
-        if "Handmatig invoeren..." in write_param_names:
-            write_param_names.remove("Handmatig invoeren...")
-            manual_param_name = forms.ask_for_string(prompt="Voer de naam van de parameter in om naar te schrijven:", title="Handmatige invoer")
-            write_param_names.append(manual_param_name)
+            # Maak een pulldown menu met de parameters (meervoudige selectie)
+            write_param_names = forms.SelectFromList.show(write_param_names, title="Selecteer parameters om naar te schrijven", button_name="Selecteer", multiselect=True)
+            if "Handmatig invoeren..." in write_param_names:
+                write_param_names.remove("Handmatig invoeren...")
+                manual_param_name = forms.ask_for_string(prompt="Voer de naam van de parameter in om naar te schrijven:", title="Handmatige invoer")
+                write_param_names.append(manual_param_name)
 
-        if read_param_name and write_param_names:
-            config["read_param"] = read_param_name
-            config["write_param"] = write_param_names
-            save_config(config)
-            MessageBox.Show("Parameters opgeslagen. Voer het script opnieuw uit zonder Shift ingedrukt te houden.", "Copy Parameter to Parameter | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
-            sys.exit()  # Stop het script na het opslaan van de parameters
+            if read_param_name and write_param_names:
+                config["read_param"] = read_param_name
+                config["write_param"] = write_param_names
+                save_config(config)
+                MessageBox.Show("Parameters opgeslagen. Voer het script opnieuw uit zonder Shift ingedrukt te houden.", "Copy Parameter to Parameter | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                sys.exit()  # Stop het script na het opslaan van de parameters
+        except OperationCanceledException:
+            MessageBox.Show("De bewerking is onderbroken door de gebruiker.", "Copy Parameter to Parameter | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            sys.exit()  # Stop het script zonder foutmelding als de selectie wordt geannuleerd
     else:
         # Gebruik parameters uit configuratiebestand
         read_param_name = config["read_param"]

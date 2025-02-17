@@ -92,7 +92,7 @@ class LineStyleForm(CustomForm):
         self.separator = GroupBox()
         self.separator.Top = 90
         self.separator.Left = 20
-        self.separator.Width = 340
+        self.separator.Width = 300
         self.separator.Height = 2
         self.separator.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         self.separator.TabStop = False

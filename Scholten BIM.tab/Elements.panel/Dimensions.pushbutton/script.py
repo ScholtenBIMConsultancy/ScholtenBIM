@@ -70,7 +70,7 @@ class DistanceForm(Form):
         self.textBox = TextBox()
         self.textBox.Top = 50
         self.textBox.Left = 20
-        self.textBox.Width = 300
+        self.textBox.Width = 100
         self.textBox.Text = "4"  # Default waarde instellen op 4 mm
         self.Controls.Add(self.textBox)
 
