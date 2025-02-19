@@ -40,18 +40,21 @@ from Autodesk.Revit.Exceptions import OperationCanceledException
 from RevitServices.Persistence import DocumentManager
 from RevitServices.Transactions import TransactionManager
 from System.Windows.Forms import MessageBox, MessageBoxButtons, MessageBoxIcon, Keys, Control
-from pyrevit import forms
+from pyrevit import forms, script, revit
 
 # Voeg deze regel toe
 from Autodesk.Revit.DB import StorageType
 
 # Actief document en view ophalen
 doc = __revit__.ActiveUIDocument.Document
-uiapp = __revit__
 uidoc = __revit__.ActiveUIDocument
+active_view = doc.ActiveView
 
 # Configuratiebestand pad
 config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+
+# Initialiseer de errors variabele
+errors = {}
 
 # Functie om parameterwaarde en opslagtype op te halen
 def get_parameter_info(element, param_name):
@@ -88,7 +91,10 @@ def set_parameter_value(element, param_name, value, storage_type):
 def select_parameters(element):
     params = [p.Definition.Name for p in element.Parameters]
     params.sort()
-    selected_params = forms.SelectFromList.show(params, multiselect=True, title="Copy Parameters to Parameters From/To | Scholten BIM Consultancy")
+    selected_params = forms.SelectFromList.show(params, multiselect=True, title="Copy Parameters to Parameters From/To| Scholten BIM Consultancy")
+    if not selected_params:
+        MessageBox.Show("Geen parameters geselecteerd. De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        sys.exit()
     return selected_params
 
 # Functie om parameters op te slaan in config.json
@@ -100,25 +106,32 @@ def save_parameters_to_config(params):
 def load_parameters_from_config():
     if os.path.exists(config_path):
         with open(config_path, 'r') as config_file:
-            return json.load(config_file)
+            params = json.load(config_file)
+            if not params:
+                MessageBox.Show("Geen parameters gevonden in het config-bestand. De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                sys.exit()
+            return params
+    else:
+        MessageBox.Show("Config-bestand niet gevonden. De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        sys.exit()
     return []
 
-# Aangepaste selectie filter om Revit Links uit te sluiten
-class RevitLinkSelectionFilter(ISelectionFilter):
+# Aangepaste filter om Revit-links uit te sluiten
+class ExcludeRevitLinks(ISelectionFilter):
     def AllowElement(self, element):
-        if element.Category and element.Category.Id.IntegerValue == int(BuiltInCategory.OST_RvtLinks):
+        if isinstance(element, RevitLinkInstance):
             return False
         return True
 
     def AllowReference(self, reference, position):
-        return False
+        return True
 
 try:
     # Controleer of Shift is ingedrukt
     if (Control.ModifierKeys & Keys.Shift) == Keys.Shift:
         # Vraag de gebruiker om een object te selecteren voor het uitlezen van parameters
-        MessageBox.Show("Selecteer een object om de parameters uit te lezen.", "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Question)
-        selected_ref = uidoc.Selection.PickObject(ObjectType.Element, RevitLinkSelectionFilter(), "Selecteer een object om de parameters uit te lezen.")
+        with forms.WarningBar (title="Pick reference element"):
+            selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer een object om de parameters uit te lezen.")
         element = doc.GetElement(selected_ref.ElementId)
         
         # Parameters selecteren en opslaan in config.json
@@ -129,8 +142,8 @@ try:
         selected_params = load_parameters_from_config()
 
         # Selecteer het bronobject
-        MessageBox.Show("Selecteer een element uit het huidige model om uit te lezen.", "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Question)
-        source_reference = uidoc.Selection.PickObject(ObjectType.Element, RevitLinkSelectionFilter(), "Selecteer het bronobject")
+        with forms.WarningBar (title="Pick reference element"):
+            source_reference = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer het bronobject")
         source_element = doc.GetElement(source_reference.ElementId)
 
         # Parameterwaarden en opslagtypes ophalen van het bronobject
@@ -139,16 +152,14 @@ try:
             value, storage_type = get_parameter_info(source_element, param_name)
             source_values[param_name] = (value, storage_type)
 
-        # Selecteer de doelobjecten
-        MessageBox.Show("Selecteer één of meerdere elementen om de parameters naar te schrijven.", "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Question)
-        target_references = uidoc.Selection.PickObjects(ObjectType.Element, RevitLinkSelectionFilter(), "Selecteer de doelobjecten")
+        # Selecteer de doelobjecten met de aangepaste filter
+        with forms.WarningBar (title="Pick target element"):
+            target_references = uidoc.Selection.PickObjects(ObjectType.Element, ExcludeRevitLinks(), "Selecteer de doelobjecten")
         target_elements = [doc.GetElement(ref.ElementId) for ref in target_references]
 
         # Transactie starten
         t = Transaction(doc, "Kopieer parameterwaarden")
         t.Start()
-
-        errors = {}
 
         # Parameterwaarden instellen voor de doelobjecten
         for element in target_elements:
@@ -170,18 +181,22 @@ try:
                         errors[category_name][param_name] = 0
                     errors[category_name][param_name] += 1
 
-        if errors:
-            error_messages = []
-            for category, params in errors.items():
-                for param, count in params.items():
-                    error_messages.append("Categorie '{}': Parameter '{}' ontbreekt in {} object(en).".format(category, param, count))
-            MessageBox.Show("\n".join(error_messages), "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        else:
-            print("Parameterwaarden succesvol gekopieerd.")
+    if errors:
+        error_messages = []
+        for category, params in errors.items():
+            for param, count in params.items():
+                error_messages.append("Categorie '{}': Parameter '{}' ontbreekt in {} object(en).".format(category, param, count))
+        MessageBox.Show("\n".join(error_messages), "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
+    else:
+        pass
 
         # Transactie voltooien
         t.Commit()
 except OperationCanceledException:
-    MessageBox.Show("De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    MessageBox.Show("De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
     if (Control.ModifierKeys & Keys.Shift) == Keys.Shift:
         sys.exit()
+finally:
+    # Zorg ervoor dat de transactie wordt afgesloten als deze is gestart
+    if 't' in locals() and t.HasStarted():
+        t.RollBack()
