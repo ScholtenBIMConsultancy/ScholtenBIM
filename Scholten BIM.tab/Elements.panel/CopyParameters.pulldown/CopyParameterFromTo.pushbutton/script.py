@@ -158,7 +158,7 @@ try:
         target_elements = [doc.GetElement(ref.ElementId) for ref in target_references]
 
         # Transactie starten
-        t = Transaction(doc, "Kopieer parameterwaarden")
+        t = Transaction(doc, "Copy Parameter to Parameter From/To")
         t.Start()
 
         # Parameterwaarden instellen voor de doelobjecten
