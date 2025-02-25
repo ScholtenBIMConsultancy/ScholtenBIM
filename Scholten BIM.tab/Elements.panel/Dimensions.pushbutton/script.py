@@ -89,12 +89,16 @@ class DistanceForm(Form):
         self.cancel_button.Click += self.on_cancel_button_click
         self.Controls.Add(self.cancel_button)
 
+        # Event afvangen bij sluiten van het formulier
+        self.FormClosing += self.on_form_closing
+
     def on_apply_button_click(self, sender, event):
         try:
-            self.distance_value = float(self.textBox.Text)  # Opslaan als mm zonder omrekening
+            self.distance_value = float(self.textBox.Text)
         except ValueError:
             MessageBox.Show("Ongeldige invoer. De standaardwaarde van 4 mm wordt gebruikt.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            self.distance_value = 4  # Default waarde van 4 mm
+            self.distance_value = 4
+        save_distance_value(self.distance_value)  # Sla altijd de waarde op
         self.DialogResult = DialogResult.OK
         self.Close()
 
@@ -102,6 +106,9 @@ class DistanceForm(Form):
         MessageBox.Show("Actie geannuleerd door gebruiker.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         self.DialogResult = DialogResult.Cancel
         self.Close()
+
+    def on_form_closing(self, sender, event):
+        save_distance_value(4)  # Sla de standaardwaarde op als het formulier wordt gesloten
 
 # Functie om de afstandswaarde op te slaan in config.json in dezelfde directory als het script
 def save_distance_value(value):
@@ -175,8 +182,18 @@ else:
     def check_view_type():
         active_view = doc.ActiveView
         view_type = active_view.ViewType
-        MessageBox.Show("Het type view is: {}".format(view_type), "View Type", MessageBoxButtons.OK, MessageBoxIcon.Information)
         return view_type
+
+    # Functie om een melding te geven en het script te stoppen als de dimensie niet horizontaal of verticaal is
+    def check_dimension_orientation(dimension, view_type):
+        if not (is_horizontal(dimension, view_type) or is_vertical(dimension, view_type)):
+            MessageBox.Show("De geselecteerde dimensie is niet horizontaal of verticaal. Het script wordt beëindigd.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            sys.exit()
+
+    # Controleer de oriëntatie van elke geselecteerde dimensie
+    for dimension in selected_dimensions:
+        view_type = check_view_type()
+        check_dimension_orientation(dimension, view_type)
 
     def adjust_text_position(dimension, view_type):
         scale = get_active_view_scale(doc)  # Schaal hier ophalen
@@ -234,7 +251,7 @@ else:
         doc.Regenerate()  # Zorg ervoor dat de nieuwe positie wordt toegepast
 
     # Gebruik de Revit transactiebeheerder
-    t = Transaction(doc, "Adjust Dimension Text Position")
+    t = Transaction(doc, "Change dimension offset")
     t.Start()
     try:
         view_type = check_view_type()  # Controleer het viewtype en toon de MessageBox één keer
