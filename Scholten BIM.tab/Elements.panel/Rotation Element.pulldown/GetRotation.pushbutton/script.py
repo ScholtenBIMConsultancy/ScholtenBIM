@@ -33,7 +33,7 @@ from Autodesk.Revit.UI.Selection import ObjectType
 from RevitServices.Persistence import DocumentManager
 from RevitServices.Transactions import TransactionManager
 from Autodesk.Revit.Exceptions import OperationCanceledException
-from pyrevit import forms
+from pyrevit import forms, script, revit
 from System.Windows.Forms import MessageBox, MessageBoxButtons, MessageBoxIcon, DialogResult
 
 # Actief document en view ophalen
@@ -41,9 +41,9 @@ doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
 
 try:
-    # Vraag de gebruiker om een object te selecteren voor het uitlezen van de rotatie
-    MessageBox.Show("Selecteer een object om de rotatie uit te lezen.", "Get Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Question)
-    selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer een object om de rotatie uit te lezen.")
+    # Vraag de gebruiker om een object te selecteren voor het uitlezen van de rotatie met een WarningBar
+    with forms.WarningBar(title="Pick reference element"):
+        selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Pick reference element")
     selection = doc.GetElement(selected_ref.ElementId)
 
     # Rotatie ophalen
@@ -51,12 +51,14 @@ try:
     if isinstance(location, LocationPoint):
         rotation = location.Rotation
         rotation_degrees = rotation * 180 / 3.14159  # Omzetten naar graden
+        if rotation_degrees == 360:
+            rotation_degrees = 0  # Zet 360 graden om naar 0 graden
         message = "De rotatie van het geselecteerde object is {:.2f} graden.".format(rotation_degrees)
     else:
         message = "Het geselecteerde object heeft geen rotatie."
 
     # Weergeven in een MessageBox
-    MessageBox.Show(message, "Resultaat", "Get Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    MessageBox.Show(message, "Resultaat", MessageBoxButtons.OK, MessageBoxIcon.Information)
 
 except OperationCanceledException:
     MessageBox.Show("De bewerking is onderbroken door de gebruiker.", "Get Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)

@@ -2,7 +2,7 @@
 
 __title__ = "Change dimension offset"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.0
+__doc__ = """Version   = 1.1
 Datum    = 14.02.2025
 __________________________________________________________________
 Description:
@@ -19,6 +19,7 @@ How-to:
 __________________________________________________________________
 Last update:
 
+- [25.02.2025] - 1.1 Het is nu ook mogelijk om de dimensions in een section aan te passen.
 - [14.02.2025] - 1.0 RELEASE
 __________________________________________________________________
 To-do:
@@ -122,14 +123,20 @@ def load_distance_value():
         return None
 
 # Functie om te controleren of een dimensie horizontaal is
-def is_horizontal(dimension):
+def is_horizontal(dimension, view_type):
     line = dimension.Curve
-    return abs(line.Direction.X) > abs(line.Direction.Y) and abs(line.Direction.Y) < 0.01
+    if view_type == ViewType.Section:
+        return abs(line.Direction.X) > abs(line.Direction.Y) and abs(line.Direction.Y) < 0.01
+    else:
+        return abs(line.Direction.X) > abs(line.Direction.Y) and abs(line.Direction.Y) < 0.01
 
 # Functie om te controleren of een dimensie verticaal is
-def is_vertical(dimension):
+def is_vertical(dimension, view_type):
     line = dimension.Curve
-    return abs(line.Direction.Y) > abs(line.Direction.X) and abs(line.Direction.X) < 0.01
+    if view_type == ViewType.Section:
+        return abs(line.Direction.Z) > abs(line.Direction.X) and abs(line.Direction.X) < 0.01
+    else:
+        return abs(line.Direction.Y) > abs(line.Direction.X) and abs(line.Direction.X) < 0.01
 
 # Check of Shift is ingedrukt tijdens het uitvoeren van het script
 shift_pressed = System.Windows.Forms.Control.ModifierKeys == System.Windows.Forms.Keys.Shift
@@ -155,34 +162,40 @@ else:
         sys.exit()
 
     selected_dimensions = []
-    excluded_dimensions = []
     for el_id in selected_element_ids:
         element = doc.GetElement(el_id)
         if isinstance(element, Dimension):
-            if is_horizontal(element) or is_vertical(element):
-                selected_dimensions.append(element)
-            else:
-                excluded_dimensions.append(element)
+            selected_dimensions.append(element)
 
     if not selected_dimensions:
-        MessageBox.Show("Geen horizontale of verticale dimensies geselecteerd. Selecteer één of meer horizontale of verticale dimensies en probeer opnieuw. \n\nDit wordt in een volgende versie verholpen.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        MessageBox.Show("Geen dimensies geselecteerd. Selecteer één of meer dimensies en probeer opnieuw.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         sys.exit()
 
-    if excluded_dimensions:
-        MessageBox.Show("Sommige geselecteerde dimensies zijn niet horizontaal of verticaal en worden uitgesloten. \n\nDit wordt in een volgende versie verholpen.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+    # Functie om het type view te controleren en een melding weer te geven
+    def check_view_type():
+        active_view = doc.ActiveView
+        view_type = active_view.ViewType
+        MessageBox.Show("Het type view is: {}".format(view_type), "View Type", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        return view_type
 
-    def adjust_text_position(dimension):
+    def adjust_text_position(dimension, view_type):
         scale = get_active_view_scale(doc)  # Schaal hier ophalen
         distance_in_feet = (distance_value * scale) / 304.8  # Omzetten van mm naar feet en vermenigvuldigen met schaal
-        if dimension.NumberOfSegments >= 2:
-            adjust_multiple_segments(dimension, distance_in_feet)
+        if view_type == ViewType.Section:
+            if dimension.NumberOfSegments >= 2:
+                adjust_multiple_segments_section(dimension, distance_in_feet)
+            else:
+                adjust_single_segment_section(dimension, distance_in_feet)
         else:
-            adjust_single_segment(dimension, distance_in_feet)
+            if dimension.NumberOfSegments >= 2:
+                adjust_multiple_segments(dimension, distance_in_feet)
+            else:
+                adjust_single_segment(dimension, distance_in_feet)
 
     def adjust_single_segment(dimension, distance_in_feet):
         dimension.ResetTextPosition()
         text_position = dimension.TextPosition
-        if is_horizontal(dimension):
+        if is_horizontal(dimension, ViewType.FloorPlan):
             new_position = XYZ(text_position.X, text_position.Y - distance_in_feet, text_position.Z)
         else:
             new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
@@ -193,8 +206,28 @@ else:
         for segment in dimension.Segments:
             segment.ResetTextPosition()
             text_position = segment.TextPosition
-            if is_horizontal(dimension):
+            if is_horizontal(dimension, ViewType.FloorPlan):
                 new_position = XYZ(text_position.X, text_position.Y - distance_in_feet, text_position.Z)
+            else:
+                new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
+            segment.TextPosition = new_position
+        doc.Regenerate()  # Zorg ervoor dat de nieuwe positie wordt toegepast
+
+    def adjust_single_segment_section(dimension, distance_in_feet):
+        dimension.ResetTextPosition()
+        text_position = dimension.TextPosition
+        if is_horizontal(dimension, ViewType.Section):
+            new_position = XYZ(text_position.X, text_position.Y, text_position.Z - distance_in_feet)
+        else:
+            new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
+        dimension.TextPosition = new_position
+        doc.Regenerate()  # Zorg ervoor dat de nieuwe positie wordt toegepast
+    def adjust_multiple_segments_section(dimension, distance_in_feet):
+        for segment in dimension.Segments:
+            segment.ResetTextPosition()
+            text_position = segment.TextPosition
+            if is_horizontal(dimension, ViewType.Section):
+                new_position = XYZ(text_position.X, text_position.Y, text_position.Z - distance_in_feet)
             else:
                 new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
             segment.TextPosition = new_position
@@ -204,9 +237,10 @@ else:
     t = Transaction(doc, "Adjust Dimension Text Position")
     t.Start()
     try:
+        view_type = check_view_type()  # Controleer het viewtype en toon de MessageBox één keer
         for dimension in selected_dimensions:
-            adjust_text_position(dimension)
+            adjust_text_position(dimension, view_type)
         t.Commit()
     except Exception as e:
         t.RollBack()
-        MessageBox.Show("Fout: {}".format(e), "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        MessageBox.Show("Fout: {}".format(e), "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error) 

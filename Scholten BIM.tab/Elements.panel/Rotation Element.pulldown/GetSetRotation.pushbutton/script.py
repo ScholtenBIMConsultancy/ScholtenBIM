@@ -35,6 +35,7 @@ from RevitServices.Persistence import DocumentManager
 from RevitServices.Transactions import TransactionManager
 from Autodesk.Revit.Exceptions import OperationCanceledException
 from System.Windows.Forms import MessageBox, MessageBoxButtons, MessageBoxIcon, DialogResult
+from pyrevit import forms
 
 # Actief document en view ophalen
 doc = __revit__.ActiveUIDocument.Document
@@ -42,8 +43,8 @@ uidoc = __revit__.ActiveUIDocument
 
 try:
     # Vraag de gebruiker om een object te selecteren voor het uitlezen van de rotatie
-    MessageBox.Show("Selecteer één object om de rotatie uit te lezen.", "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Question)
-    selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer één object om de rotatie uit te lezen.")
+    with forms.WarningBar(title="Pick reference element"):
+        selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Pick reference element.")
     element = doc.GetElement(selected_ref.ElementId)
 
     # Rotatie ophalen
@@ -51,14 +52,16 @@ try:
     if isinstance(location, LocationPoint):
         rotation = location.Rotation
         rotation_degrees = rotation * 180 / 3.14159  # Omzetten naar graden
+        if rotation_degrees == 360:
+            rotation_degrees = 0
         MessageBox.Show("De rotatie van het geselecteerde object is {:.2f} graden.".format(rotation_degrees), "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
     else:
         MessageBox.Show("Het geselecteerde object heeft geen rotatie.", "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         sys.exit()
 
     # Vraag de gebruiker om een nieuw object te selecteren voor het toepassen van de rotatie
-    MessageBox.Show("Selecteer één object om de rotatie toe te passen.", "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Question)
-    new_selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer één object object om de rotatie toe te passen.")
+    with forms.WarningBar(title="Pick target element"):
+        new_selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Pick target element.")
     new_element = doc.GetElement(new_selected_ref.ElementId)
 
     # Rotatie toepassen
