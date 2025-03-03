@@ -70,6 +70,9 @@ try:
         try:
             t = Transaction(doc, "Get & Set Rotation Element")
             t.Start()
+            # Reset de rotatie van het doel-element naar 0
+            new_location.Rotate(Line.CreateBound(new_location.Point, new_location.Point + XYZ(0, 0, 1)), -new_location.Rotation)
+            # Pas de nieuwe rotatie toe
             new_location.Rotate(Line.CreateBound(new_location.Point, new_location.Point + XYZ(0, 0, 1)), rotation)
             t.Commit()
             MessageBox.Show("De rotatie is toegepast op het nieuwe object.", "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
