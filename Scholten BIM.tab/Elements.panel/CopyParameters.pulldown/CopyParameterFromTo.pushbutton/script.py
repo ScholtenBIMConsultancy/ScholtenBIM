@@ -2,7 +2,7 @@
 
 __title__ = "Copy Parameter to Parameter From/To"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.0
+__doc__ = """Version   = 1.1
 Datum    = 17.02.2025
 __________________________________________________________________
 Description:
@@ -18,6 +18,7 @@ __________________________________________________________________
 Last update:
 
 - [17.02.2025] - 1.0 RELEASE
+- [04.03.2025] - 1.1 Update transaction
 __________________________________________________________________
 To-do:
 
@@ -55,6 +56,9 @@ config_path = os.path.join(os.path.dirname(__file__), 'config.json')
 
 # Initialiseer de errors variabele
 errors = {}
+
+# Initialiseer de transactievariabele
+t = None
 
 # Functie om parameterwaarde en opslagtype op te halen
 def get_parameter_info(element, param_name):
@@ -129,30 +133,19 @@ class ExcludeRevitLinks(ISelectionFilter):
 try:
     # Controleer of Shift is ingedrukt
     if (Control.ModifierKeys & Keys.Shift) == Keys.Shift:
-        # Vraag de gebruiker om een object te selecteren voor het uitlezen van parameters
         with forms.WarningBar (title="Pick reference element"):
             selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer een object om de parameters uit te lezen.")
         element = doc.GetElement(selected_ref.ElementId)
-        
-        # Parameters selecteren en opslaan in config.json
         selected_params = select_parameters(element)
         save_parameters_to_config(selected_params)
     else:
-        # Parameters laden uit config.json
         selected_params = load_parameters_from_config()
-
-        # Selecteer het bronobject
         with forms.WarningBar (title="Pick reference element"):
             source_reference = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer het bronobject")
         source_element = doc.GetElement(source_reference.ElementId)
-
-        # Parameterwaarden en opslagtypes ophalen van het bronobject
-        source_values = {}
-        for param_name in selected_params:
-            value, storage_type = get_parameter_info(source_element, param_name)
-            source_values[param_name] = (value, storage_type)
-
-        # Selecteer de doelobjecten met de aangepaste filter
+        
+        source_values = {param_name: get_parameter_info(source_element, param_name) for param_name in selected_params}
+        
         with forms.WarningBar (title="Pick target element"):
             target_references = uidoc.Selection.PickObjects(ObjectType.Element, ExcludeRevitLinks(), "Selecteer de doelobjecten")
         target_elements = [doc.GetElement(ref.ElementId) for ref in target_references]
@@ -161,7 +154,6 @@ try:
         t = Transaction(doc, "Copy Parameter to Parameter From/To")
         t.Start()
 
-        # Parameterwaarden instellen voor de doelobjecten
         for element in target_elements:
             category_name = element.Category.Name
             for param_name, (value, storage_type) in source_values.items():
@@ -169,34 +161,20 @@ try:
                     if element.LookupParameter(param_name):
                         set_parameter_value(element, param_name, value, storage_type)
                     else:
-                        if category_name not in errors:
-                            errors[category_name] = {}
-                        if param_name not in errors[category_name]:
-                            errors[category_name][param_name] = 0
+                        errors.setdefault(category_name, {}).setdefault(param_name, 0)
                         errors[category_name][param_name] += 1
-                except Exception as e:
-                    if category_name not in errors:
-                        errors[category_name] = {}
-                    if param_name not in errors[category_name]:
-                        errors[category_name][param_name] = 0
+                except Exception:
+                    errors.setdefault(category_name, {}).setdefault(param_name, 0)
                     errors[category_name][param_name] += 1
 
-    if errors:
-        error_messages = []
-        for category, params in errors.items():
-            for param, count in params.items():
-                error_messages.append("Categorie '{}': Parameter '{}' ontbreekt in {} object(en).".format(category, param, count))
-        MessageBox.Show("\n".join(error_messages), "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
-    else:
-        pass
-
-        # Transactie voltooien
-        t.Commit()
+        if errors:
+            error_messages = ["Categorie '{}': Parameter '{}' ontbreekt in {} object(en).".format(category, param, count) for category, params in errors.items() for param, count in params.items()]
+            MessageBox.Show("\n".join(error_messages), "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        else:
+            if t is not None and t.HasStarted():
+                t.Commit()
 except OperationCanceledException:
     MessageBox.Show("De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
-    if (Control.ModifierKeys & Keys.Shift) == Keys.Shift:
-        sys.exit()
 finally:
-    # Zorg ervoor dat de transactie wordt afgesloten als deze is gestart
-    if 't' in locals() and t.HasStarted():
+    if t is not None and t.HasStarted():
         t.RollBack()
