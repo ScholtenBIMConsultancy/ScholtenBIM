@@ -2,7 +2,7 @@
 
 __title__ = "Copy Parameter to Parameter From/To"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.1
+__doc__ = """Version   = 1.0
 Datum    = 17.02.2025
 __________________________________________________________________
 Description:
@@ -18,7 +18,6 @@ __________________________________________________________________
 Last update:
 
 - [17.02.2025] - 1.0 RELEASE
-- [04.03.2025] - 1.1 Update transaction
 __________________________________________________________________
 To-do:
 
@@ -108,30 +107,42 @@ def save_parameters_to_config(params):
 
 # Functie om parameters te laden uit config.json
 def load_parameters_from_config():
-    if os.path.exists(config_path):
-        with open(config_path, 'r') as config_file:
+    if not os.path.exists(config_path):
+        MessageBox.Show("Config-bestand niet gevonden. De gebruiker heeft de actie gestopt.", 
+                        "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Information)
+        sys.exit()
+    
+    if os.stat(config_path).st_size == 0:
+        MessageBox.Show("Config-bestand is leeg. De gebruiker heeft de actie gestopt.", 
+                        "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", 
+                        MessageBoxButtons.OK, MessageBoxIcon.Information)
+        sys.exit()
+    
+    with open(config_path, 'r') as config_file:
+        try:
             params = json.load(config_file)
             if not params:
-                MessageBox.Show("Geen parameters gevonden in het config-bestand. De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                MessageBox.Show("Geen parameters gevonden in het config-bestand. De gebruiker heeft de actie gestopt.", 
+                                "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", 
+                                MessageBoxButtons.OK, MessageBoxIcon.Information)
                 sys.exit()
             return params
-    else:
-        MessageBox.Show("Config-bestand niet gevonden. De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
-        sys.exit()
-    return []
+        except json.JSONDecodeError:
+            MessageBox.Show("Config-bestand bevat ongeldige JSON. De gebruiker heeft de actie gestopt.", 
+                            "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", 
+                            MessageBoxButtons.OK, MessageBoxIcon.Information)
+            sys.exit()
 
 # Aangepaste filter om Revit-links uit te sluiten
 class ExcludeRevitLinks(ISelectionFilter):
     def AllowElement(self, element):
-        if isinstance(element, RevitLinkInstance):
-            return False
-        return True
-
+        return not isinstance(element, RevitLinkInstance)
+    
     def AllowReference(self, reference, position):
         return True
 
 try:
-    # Controleer of Shift is ingedrukt
     if (Control.ModifierKeys & Keys.Shift) == Keys.Shift:
         with forms.WarningBar (title="Pick reference element"):
             selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Selecteer een object om de parameters uit te lezen.")
@@ -150,7 +161,6 @@ try:
             target_references = uidoc.Selection.PickObjects(ObjectType.Element, ExcludeRevitLinks(), "Selecteer de doelobjecten")
         target_elements = [doc.GetElement(ref.ElementId) for ref in target_references]
 
-        # Transactie starten
         t = Transaction(doc, "Copy Parameter to Parameter From/To")
         t.Start()
 
