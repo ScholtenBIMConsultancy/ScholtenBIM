@@ -1,3 +1,29 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Text to Minimum Width"
+__author__ = "Scholten BIM Consultancy"
+__doc__ = """Version   = 1.0
+Datum    = 10.03.2025
+__________________________________________________________________
+Description:
+Met deze tool kan je van de geselecteerde textnotes de breedte van het tekstveld aanpassen naar een minimale maat.
+__________________________________________________________________
+How-to:
+
+-> Selecteer één of meerdere textnotes.
+-> Run het script.
+__________________________________________________________________
+Last update:
+
+- [10.03.2025] - 1.0 RELEASE
+__________________________________________________________________
+To-do:
+
+- 
+__________________________________________________________________
+"""
+
+
 import clr
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitServices')
