@@ -2,7 +2,7 @@
 
 __title__ = "Get & Set Rotation Element"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.1
+__doc__ = """Version   = 1.2
 Datum    = 31.01.2025
 __________________________________________________________________
 Description:
@@ -15,6 +15,7 @@ How-to:
 __________________________________________________________________
 Last update:
 
+- [10.03.2025] - 1.2 Het is nu mogelijk om de rotatie op meerdere elementen te gelijk toe te passen.
 - [11.02.2025] - 1.1 Als script tussentijds wordt gestopt volgt er geen foutmelding meer. Icons toegevoegd aan de meldingen.
 - [31.01.2025] - 1.0 RELEASE
 __________________________________________________________________
@@ -59,30 +60,28 @@ try:
         MessageBox.Show("Het geselecteerde object heeft geen rotatie.", "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         sys.exit()
 
-    # Vraag de gebruiker om een nieuw object te selecteren voor het toepassen van de rotatie
-    with forms.WarningBar(title="Pick target element"):
-        new_selected_ref = uidoc.Selection.PickObject(ObjectType.Element, "Pick target element.")
-    new_element = doc.GetElement(new_selected_ref.ElementId)
+    # Vraag de gebruiker om meerdere nieuwe objecten te selecteren voor het toepassen van de rotatie
+    with forms.WarningBar(title="Pick target elements"):
+        new_selected_refs = uidoc.Selection.PickObjects(ObjectType.Element, "Pick target elements.")
+    new_elements = [doc.GetElement(ref.ElementId) for ref in new_selected_refs]
 
-    # Rotatie toepassen
-    new_location = new_element.Location
-    if isinstance(new_location, LocationPoint):
-        try:
-            t = Transaction(doc, "Get & Set Rotation Element")
-            t.Start()
-            # Reset de rotatie van het doel-element naar 0
-            new_location.Rotate(Line.CreateBound(new_location.Point, new_location.Point + XYZ(0, 0, 1)), -new_location.Rotation)
-            # Pas de nieuwe rotatie toe
-            new_location.Rotate(Line.CreateBound(new_location.Point, new_location.Point + XYZ(0, 0, 1)), rotation)
-            t.Commit()
-            MessageBox.Show("De rotatie is toegepast op het nieuwe object.", "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
-        except Exception as e:
-            MessageBox.Show("Er is een fout opgetreden: {}".format(e), "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            if t.HasStarted():
-                t.RollBack()
-    else:
-        MessageBox.Show("Het nieuwe geselecteerde object kan geen rotatie hebben.", "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-
+    # Rotatie toepassen op elk geselecteerd doelobject
+    t = Transaction(doc, "Get & Set Rotation Element")
+    t.Start()
+    try:
+        for new_element in new_elements:
+            new_location = new_element.Location
+            if isinstance(new_location, LocationPoint):
+                # Reset de rotatie van het doel-element naar 0
+                new_location.Rotate(Line.CreateBound(new_location.Point, new_location.Point + XYZ(0, 0, 1)), -new_location.Rotation)
+                # Pas de nieuwe rotatie toe
+                new_location.Rotate(Line.CreateBound(new_location.Point, new_location.Point + XYZ(0, 0, 1)), rotation)
+        t.Commit()
+        MessageBox.Show("De rotatie is toegepast op de geselecteerde objecten.", "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    except Exception as e:
+        MessageBox.Show("Er is een fout opgetreden: {}".format(e), "Get & Set Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        if t.HasStarted():
+            t.RollBack()
 except OperationCanceledException:
     MessageBox.Show("De bewerking is onderbroken door de gebruiker.", "Get Rotation Element | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
 except Exception as e:
