@@ -95,9 +95,9 @@ def set_parameter_value(element, param_name, value, storage_type):
 def select_parameters(element):
     params = [p.Definition.Name for p in element.Parameters]
     params.sort()
-    selected_params = forms.SelectFromList.show(params, multiselect=True, title="Copy Parameters to Parameters From/To| Scholten BIM Consultancy")
+    selected_params = forms.SelectFromList.show(params, multiselect=True, title="Copy Parameters to Parameters From/To | Scholten BIM Consultancy")
     if not selected_params:
-        MessageBox.Show("Geen parameters geselecteerd. De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        MessageBox.Show("Geen parameters geselecteerd. De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
         sys.exit()
     return selected_params
 
@@ -110,13 +110,13 @@ def save_parameters_to_config(params):
 def load_parameters_from_config():
     if not os.path.exists(config_path):
         MessageBox.Show("Config-bestand niet gevonden. De gebruiker heeft de actie gestopt.", 
-                        "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", 
+                        "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", 
                         MessageBoxButtons.OK, MessageBoxIcon.Information)
         sys.exit()
     
     if os.stat(config_path).st_size == 0:
         MessageBox.Show("Config-bestand is leeg. De gebruiker heeft de actie gestopt.", 
-                        "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", 
+                        "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", 
                         MessageBoxButtons.OK, MessageBoxIcon.Information)
         sys.exit()
     
@@ -125,13 +125,13 @@ def load_parameters_from_config():
             params = json.load(config_file)
             if not params:
                 MessageBox.Show("Geen parameters gevonden in het config-bestand. De gebruiker heeft de actie gestopt.", 
-                                "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", 
+                                "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", 
                                 MessageBoxButtons.OK, MessageBoxIcon.Information)
                 sys.exit()
             return params
         except json.JSONDecodeError:
             MessageBox.Show("Config-bestand bevat ongeldige JSON. De gebruiker heeft de actie gestopt.", 
-                            "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", 
+                            "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", 
                             MessageBoxButtons.OK, MessageBoxIcon.Information)
             sys.exit()
 
@@ -172,20 +172,21 @@ try:
                     if element.LookupParameter(param_name):
                         set_parameter_value(element, param_name, value, storage_type)
                     else:
-                        errors.setdefault(category_name, {}).setdefault(param_name, 0)
-                        errors[category_name][param_name] += 1
+                        errors.setdefault(param_name, {}).setdefault(category_name, 0)
+                        errors[param_name][category_name] += 1
                 except Exception:
-                    errors.setdefault(category_name, {}).setdefault(param_name, 0)
-                    errors[category_name][param_name] += 1
+                    errors.setdefault(param_name, {}).setdefault(category_name, 0)
+                    errors[param_name][category_name] += 1
 
         if errors:
-            error_messages = ["Categorie '{}': Parameter '{}' ontbreekt in {} object(en).".format(category, param, count) for category, params in errors.items() for param, count in params.items()]
-            MessageBox.Show("\n".join(error_messages), "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        else:
-            if t is not None and t.HasStarted():
-                t.Commit()
+            sorted_errors = sorted(errors.items())
+            error_messages = ["Parameter '{}': ontbreekt in categorieën: {}.".format(param, ", ".join(["{} ({} object(en))".format(category, count) for category, count in categories.items()])) for param, categories in sorted_errors]
+            MessageBox.Show("\n".join(error_messages), "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        
+        if t is not None and t.HasStarted():
+            t.Commit()
 except OperationCanceledException:
-    MessageBox.Show("De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To| Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    MessageBox.Show("De gebruiker heeft de actie gestopt.", "Copy Parameters to Parameters From/To | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
 finally:
     if t is not None and t.HasStarted():
         t.RollBack()

@@ -1,6 +1,6 @@
 __title__ = "CropView"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.2
+__doc__ = """Version   = 1.3
 Datum    = 20.12.2024
 __________________________________________________________________
 Description:
@@ -16,8 +16,9 @@ How-to:
 __________________________________________________________________
 Last update:
 
+- [25.03.2025] - 1.3 Als er een scopebox is toegepast zal deze eerst worden losgekoppeld
 - [13.02.2025] - 1.2 Foutaanpassingen verwerkt
-- [11.02.2025] - 1.1 PyRevit Forms omgezet naar Windows Forms.
+- [11.02.2025] - 1.1 PyRevit Forms omgezet naar Windows Forms
 - [20.12.2024] - 1.0 RELEASE
 __________________________________________________________________
 To-do:
@@ -43,6 +44,13 @@ active_view = doc.ActiveView
 if not hasattr(active_view, "CropBoxActive"):
     MessageBox.Show("De actieve view ondersteunt geen crop regions.", "CropView | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
     sys.exit()  # Stop het script als de actieve view geen crop regions ondersteunt
+
+# Controleer of er een scope box is toegepast en zet deze op None
+if active_view.LookupParameter("Scope Box").AsElementId() != DB.ElementId.InvalidElementId:
+    t = Transaction(doc, "Remove Scope Box")
+    t.Start()
+    active_view.LookupParameter("Scope Box").Set(DB.ElementId.InvalidElementId)
+    t.Commit()
 
 # Verkrijg de geselecteerde elementen
 uidoc = __revit__.ActiveUIDocument

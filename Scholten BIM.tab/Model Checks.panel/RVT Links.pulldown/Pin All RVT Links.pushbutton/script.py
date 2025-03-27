@@ -2,7 +2,7 @@
 
 __title__ = "Pin All Revit Links"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.2
+__doc__ = """Version   = 1.3
 Datum    = 20.12.2025
 __________________________________________________________________
 Description:
@@ -15,6 +15,7 @@ How-to:
 __________________________________________________________________
 Last update:
 
+- [25.03.2025] - 1.3 Revit 2025 compatible gemaakt
 - [11.02.2025] - 1.2 Icons toegevoegd aan de meldingen en messageboxes gebruikt ipv taskdialogs
 - [06.02.2025] - 1.1 Toevoegen van opsommingstekens en aangepaste tekst voor niet gepinde links
 - [20.12.2024] - 1.0 RELEASE
@@ -30,14 +31,11 @@ clr.AddReference('RevitAPI')
 clr.AddReference('RevitAPIUI')
 clr.AddReference('RevitServices')
 clr.AddReference('System.Windows.Forms')
-clr.AddReference('IronPython.Wpf')
 
 from Autodesk.Revit.DB import *
 from RevitServices.Persistence import DocumentManager
 from RevitServices.Transactions import TransactionManager
 from System.Windows.Forms import MessageBox, MessageBoxButtons, MessageBoxIcon, DialogResult
-#from RevitServices.UI import UIApplication
-from pyrevit import forms
 
 # Verkrijg de huidige document en UI document
 doc = __revit__.ActiveUIDocument.Document
