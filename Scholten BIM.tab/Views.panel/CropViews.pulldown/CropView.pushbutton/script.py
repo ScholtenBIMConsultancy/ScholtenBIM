@@ -27,7 +27,6 @@ To-do:
 __________________________________________________________________
 """
 
-# Importeer de benodigde Revit API-modules en PyRevit tools
 import clr
 import sys
 from pyrevit import revit, DB, HOST_APP
@@ -40,17 +39,25 @@ from System.Windows.Forms import MessageBox, MessageBoxButtons, MessageBoxIcon, 
 doc = __revit__.ActiveUIDocument.Document
 active_view = doc.ActiveView
 
+# Controleer of de actieve view een Floor Plan of Ceiling Plan is
+def is_floor_or_ceiling_plan(view):
+    return view.ViewType == DB.ViewType.FloorPlan or view.ViewType == DB.ViewType.CeilingPlan
+
 # Controleer of de actieve view crop regions ondersteunt
 if not hasattr(active_view, "CropBoxActive"):
     MessageBox.Show("De actieve view ondersteunt geen crop regions.", "CropView | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
     sys.exit()  # Stop het script als de actieve view geen crop regions ondersteunt
 
 # Controleer of er een scope box is toegepast en zet deze op None
-if active_view.LookupParameter("Scope Box").AsElementId() != DB.ElementId.InvalidElementId:
-    t = Transaction(doc, "Remove Scope Box")
-    t.Start()
-    active_view.LookupParameter("Scope Box").Set(DB.ElementId.InvalidElementId)
-    t.Commit()
+if is_floor_or_ceiling_plan(active_view):
+    if active_view.LookupParameter("Scope Box").AsElementId() != DB.ElementId.InvalidElementId:
+        t = Transaction(doc, "Remove Scope Box")
+        t.Start()
+        active_view.LookupParameter("Scope Box").Set(DB.ElementId.InvalidElementId)
+        t.Commit()
+else:
+    MessageBox.Show("De actieve view is geen Floor Plan of Ceiling Plan.", "CropView | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
+    sys.exit()  # Stop het script als de actieve view geen Floor Plan of Ceiling Plan is
 
 # Verkrijg de geselecteerde elementen
 uidoc = __revit__.ActiveUIDocument
@@ -58,6 +65,8 @@ selection = [doc.GetElement(elid) for elid in uidoc.Selection.GetElementIds()]
 
 # Filter geselecteerde lijnen
 lines = [el for el in selection if isinstance(el, DB.CurveElement)]
+
+# Controleer of er lijnen zijn geselecteerd
 if not lines:
     MessageBox.Show("Selecteer eerst lijnen om een crop view te maken.", "CropView | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
     sys.exit()  # Stop het script als er geen lijnen zijn geselecteerd
