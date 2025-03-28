@@ -1,6 +1,6 @@
 __title__ = "CropView on dependent"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.2
+__doc__ = """Version   = 1.3
 Datum    = 20.12.2024
 __________________________________________________________________
 Description:
@@ -16,8 +16,9 @@ How-to:
 __________________________________________________________________
 Last update:
 
+- [28.03.2025] - 1.3 Controle floor/ceilingplan toegevoegd
 - [13.02.2025] - 1.2 Foutaanpassingen verwerkt
-- [11.02.2025] - 1.1 PyRevit Forms omgezet naar Windows Forms.
+- [11.02.2025] - 1.1 PyRevit Forms omgezet naar Windows Forms
 - [20.12.2024] - 1.0 RELEASE
 __________________________________________________________________
 To-do:
@@ -49,6 +50,11 @@ from System.Windows.Forms import MessageBox, MessageBoxButtons, MessageBoxIcon, 
 doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
 active_view = doc.ActiveView
+
+# Controleer of de actieve view een Floor Plan of Ceiling Plan is
+if not isinstance(active_view, ViewPlan) or active_view.ViewType not in [ViewType.FloorPlan, ViewType.CeilingPlan]:
+    MessageBox.Show("De actieve view is geen Floor Plan of Ceiling Plan.", "CropView on dependent | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
+    sys.exit()  # Stop het script als de actieve view geen Floor Plan of Ceiling Plan is
 
 # Controleer of de actieve view crop regions ondersteunt
 if not hasattr(active_view, "CropBoxActive"):
