@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 __title__ = "Unused Revision Sequences"
 __author__ = "Scholten BIM Consultancy"
 __doc__ = """Version   = 1.0
@@ -26,6 +28,7 @@ clr.AddReference('RevitAPI')
 clr.AddReference('RevitServices')
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, RevisionCloud, ViewSheet
 from RevitServices.Persistence import DocumentManager
+from pyrevit import output
 
 # Collect current document
 doc = __revit__.ActiveUIDocument.Document
@@ -54,7 +57,14 @@ used_revision_ids = used_revision_ids_clouds.union(used_revision_ids_sheets)
 # Find unused revisions
 unused_revisions = [revision for revision in revisions if revision.Id not in used_revision_ids]
 
-# Print unused revisions using .format()
-print("==== Unused Revisions ====")
-for revision in unused_revisions:
-    print("Unused Revision: {} - {}".format(revision.Id, revision.Name))
+# Sort unused revisions by sequence number
+unused_revisions_sorted = sorted(unused_revisions, key=lambda rev: rev.SequenceNumber)
+
+output_window = output.get_output()
+
+# Print the selected sequence and description at the top
+output_window.print_md("##**==== Unused Revisions ====**##")
+
+for revision in unused_revisions_sorted:
+    un_rev = "Unused Revision: {} - {}".format(revision.Id, revision.Name)
+    output_window.print_md(un_rev)

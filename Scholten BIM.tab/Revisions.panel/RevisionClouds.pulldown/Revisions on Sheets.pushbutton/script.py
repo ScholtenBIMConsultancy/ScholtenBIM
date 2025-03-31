@@ -1,3 +1,31 @@
+# -*- coding: utf-8 -*-
+
+__title__ = "Revisions on Sheet"
+__author__ = "Scholten BIM Consultancy"
+__doc__ = """Version   = 1.0
+Datum    = 28.03.2025
+__________________________________________________________________
+Description:
+
+Met deze tool kan je zien op welke sheets de geselecteerde revision te zien is.
+__________________________________________________________________
+How-to:
+
+-> Run het script.
+-> Kies uit je pulldown menu de uit te lezen sequence.
+-> Overzicht van sheets.
+__________________________________________________________________
+Last update:
+
+- [28.03.2025] - 1.0 RELEASE
+__________________________________________________________________
+To-do:
+
+-
+__________________________________________________________________
+"""
+
+
 import clr
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitServices')
@@ -22,6 +50,8 @@ selected_seq = forms.SelectFromList.show(revision_sequences, title="Select Revis
 if selected_seq:
     sheets_found = False
     selected_seq_number = int(selected_seq.split(" - ")[0])  # Extract the sequence number from the selected item
+    selected_description = selected_seq.split(" - ")[1]  # Extract the description from the selected item
+    
     # Collect sheets with the selected revision sequence
     sheets = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Sheets).WhereElementIsNotElementType().ToElements()
     sheet_list = []
@@ -33,13 +63,17 @@ if selected_seq:
                 sheets_found = True
                 sheet_list.append(sheet)
     
+    output_window = output.get_output()
+    
+    # Print the selected sequence and description at the top
+    output_window.print_md("##**==== Selected Revision Sequence:** {} - {} ====##".format(selected_seq_number, selected_description))
+    
     if sheets_found:
         # Sort sheets by sheet number
         sorted_sheets = sorted(sheet_list, key=lambda s: s.SheetNumber)
-        # Show sorted sheets with an "Open" button
-        output_window = output.get_output()
+        # Show sorted sheets without extra space
         for sheet in sorted_sheets:
             sheet_info = "Sheet: {} - {}".format(sheet.SheetNumber, sheet.Name)
-            output_window.print_md("{} Open".format(sheet_info, sheet.Id))
+            output_window.print_md(sheet_info)
     else:
         output_window.print_md("No sheets found for the selected revision sequence.")
