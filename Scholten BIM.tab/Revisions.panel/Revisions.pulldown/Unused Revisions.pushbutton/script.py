@@ -26,10 +26,12 @@ __________________________________________________________________
 import clr
 clr.AddReference('RevitAPI')
 clr.AddReference('RevitServices')
-from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, RevisionCloud, ViewSheet
+clr.AddReference('System.Windows.Forms')
+from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, RevisionCloud, ViewSheet, Transaction
 from RevitServices.Persistence import DocumentManager
 from pyrevit import forms
 from pyrevit import script
+from System.Windows.Forms import MessageBox, MessageBoxButtons, MessageBoxIcon
 
 # Collect current document
 doc = __revit__.ActiveUIDocument.Document
@@ -75,7 +77,36 @@ selected_revisions = forms.SelectFromList.show(
 # Handle form results
 if selected_revisions:
     selected_revision_ids = [unused_revisions_sorted[revision_items.index(rev)].Id for rev in selected_revisions]
-    TransactionManager.Instance.EnsureInTransaction(doc)
-    for rev_id in selected_revision_ids:
-        doc.Delete(rev_id)
-    TransactionManager.Instance.TransactionTaskDone()
+    
+    # Check if there is more than one revision
+    if len(revisions) > 1:
+        # Ensure at least one revision remains
+        if len(selected_revision_ids) >= len(revisions):
+            # Remove the first selected revision from the deletion list
+            first_revision_id = selected_revision_ids.pop(0)
+            first_revision = next(rev for rev in revisions if rev.Id == first_revision_id)
+            
+            t = Transaction(doc, 'Delete Selected Revisions')
+            try:
+                t.Start()
+                for rev_id in selected_revision_ids:
+                    doc.Delete(rev_id)
+                t.Commit()
+                # Show MessageBox with message
+                MessageBox.Show("Revision '{0} - {1}' has been retained.".format(first_revision.SequenceNumber, first_revision.Description), "Unused Revision Sequences | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            except Exception as e:
+                t.RollBack()
+                print("Error: {}".format(e))
+        else:
+            t = Transaction(doc, 'Delete Selected Revisions')
+            try:
+                t.Start()
+                for rev_id in selected_revision_ids:
+                    doc.Delete(rev_id)
+                t.Commit()
+            except Exception as e:
+                t.RollBack()
+                print("Error: {}".format(e))
+    else:
+        # Show MessageBox with message
+        MessageBox.Show("Cannot delete the only remaining revision.", "Unused Revision Sequences | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Warning)
