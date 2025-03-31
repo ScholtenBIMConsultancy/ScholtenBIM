@@ -28,7 +28,8 @@ clr.AddReference('RevitAPI')
 clr.AddReference('RevitServices')
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, RevisionCloud, ViewSheet
 from RevitServices.Persistence import DocumentManager
-from pyrevit import output
+from pyrevit import forms
+from pyrevit import script
 
 # Collect current document
 doc = __revit__.ActiveUIDocument.Document
@@ -60,11 +61,21 @@ unused_revisions = [revision for revision in revisions if revision.Id not in use
 # Sort unused revisions by sequence number
 unused_revisions_sorted = sorted(unused_revisions, key=lambda rev: rev.SequenceNumber)
 
-output_window = output.get_output()
+# Create a list of unused revisions for the form
+revision_items = ["{} - {}".format(rev.SequenceNumber, rev.Description) for rev in unused_revisions_sorted]
 
-# Print the selected sequence and description at the top
-output_window.print_md("##**==== Unused Revisions ====**##")
+# Show the form
+selected_revisions = forms.SelectFromList.show(
+    revision_items,
+    title='Unused Revisions | Scholten BIM Consultancy',
+    button_name='Delete Selected',
+    multiselect=True
+)
 
-for revision in unused_revisions_sorted:
-    un_rev = "Unused Revision: {} - {}".format(revision.Id, revision.Name)
-    output_window.print_md(un_rev)
+# Handle form results
+if selected_revisions:
+    selected_revision_ids = [unused_revisions_sorted[revision_items.index(rev)].Id for rev in selected_revisions]
+    TransactionManager.Instance.EnsureInTransaction(doc)
+    for rev_id in selected_revision_ids:
+        doc.Delete(rev_id)
+    TransactionManager.Instance.TransactionTaskDone()

@@ -45,7 +45,7 @@ revision_dict = {rev.SequenceNumber: "{} - {}".format(rev.SequenceNumber, rev.De
 revision_sequences = list(revision_dict.values())
 
 # Show a dropdown menu to select a revision sequence
-selected_seq = forms.SelectFromList.show(revision_sequences, title="Select Revision Sequence", width=300, button_name="Select")
+selected_seq = forms.SelectFromList.show(revision_sequences, title="Select Revision Sequence | Scholten BIM Consultancy", width=300, button_name="Select")
 
 if selected_seq:
     sheets_found = False
