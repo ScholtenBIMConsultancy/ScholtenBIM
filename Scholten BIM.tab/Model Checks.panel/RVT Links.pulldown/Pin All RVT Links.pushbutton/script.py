@@ -2,7 +2,7 @@
 
 __title__ = "Pin All Revit Links"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.3
+__doc__ = """Version   = 1.4
 Datum    = 20.12.2025
 __________________________________________________________________
 Description:
@@ -15,6 +15,7 @@ How-to:
 __________________________________________________________________
 Last update:
 
+- [01.04.2025] - 1.4 Als er geen Revit Links zijn wordt dan aangegeven i.p.v. dat de Links al zijn gepind.
 - [25.03.2025] - 1.3 Revit 2025 compatible gemaakt
 - [11.02.2025] - 1.2 Icons toegevoegd aan de meldingen en messageboxes gebruikt ipv taskdialogs
 - [06.02.2025] - 1.1 Toevoegen van opsommingstekens en aangepaste tekst voor niet gepinde links
@@ -57,26 +58,29 @@ def pin_all_links(links):
 collector = FilteredElementCollector(doc).OfClass(RevitLinkInstance)
 links = [link for link in collector]
 
-# Controleren of alle links gepind zijn
-unpinned_links = [link for link in links if not is_link_pinned(link)]
-
-if len(unpinned_links) > 0:
-    # Log de niet gepinde links
-    unpinned_link_types = ["• " + doc.GetElement(link.GetTypeId()).get_Parameter(BuiltInParameter.SYMBOL_NAME_PARAM).AsString() for link in unpinned_links]
-    unpinned_links_str = "\n".join(unpinned_link_types)
-
-    # Popup venster met de vraag of de links gepind moeten worden
-    if len(unpinned_links) == 1:
-        message = "Er is 1 niet gepinde Revit link gevonden.\n\nNiet gepinde link:\n\n{}\n\nWilt u deze link pinnen?".format(unpinned_links_str)
-    else:
-        message = "Er zijn {} niet gepinde Revit links gevonden.\n\nNiet gepinde links:\n\n{}\n\nWilt u deze links pinnen?".format(len(unpinned_links), unpinned_links_str)
-    
-    result = MessageBox.Show(message, "Pin All Revit Links | Scholten BIM Consultancy", MessageBoxButtons.YesNo, MessageBoxIcon.Error)
-
-    if result == DialogResult.Yes:
-        pin_all_links(unpinned_links)
-        MessageBox.Show("Alle Revit links zijn nu gepind.", "Pin All Revit Links | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
-    else:
-        MessageBox.Show("Er zijn {} niet gepinde links. Deze zijn niet gepind.".format(len(unpinned_links)), "Pin All Revit Links | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+if len(links) == 0:
+    MessageBox.Show("Er zijn geen Revit links in het document.", "Pin All Revit Links | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
 else:
-    MessageBox.Show("Alle Revit links zijn al gepind.", "Pin All Revit Links | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    # Controleren of alle links gepind zijn
+    unpinned_links = [link for link in links if not is_link_pinned(link)]
+
+    if len(unpinned_links) > 0:
+        # Log de niet gepinde links
+        unpinned_link_types = ["• " + doc.GetElement(link.GetTypeId()).get_Parameter(BuiltInParameter.SYMBOL_NAME_PARAM).AsString() for link in unpinned_links]
+        unpinned_links_str = "\n".join(unpinned_link_types)
+
+        # Popup venster met de vraag of de links gepind moeten worden
+        if len(unpinned_links) == 1:
+            message = "Er is 1 niet gepinde Revit link gevonden.\n\nNiet gepinde link:\n\n{}\n\nWilt u deze link pinnen?".format(unpinned_links_str)
+        else:
+            message = "Er zijn {} niet gepinde Revit links gevonden.\n\nNiet gepinde links:\n\n{}\n\nWilt u deze links pinnen?".format(len(unpinned_links), unpinned_links_str)
+        
+        result = MessageBox.Show(message, "Pin All Revit Links | Scholten BIM Consultancy", MessageBoxButtons.YesNo, MessageBoxIcon.Error)
+
+        if result == DialogResult.Yes:
+            pin_all_links(unpinned_links)
+            MessageBox.Show("Alle Revit links zijn nu gepind.", "Pin All Revit Links | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+        else:
+            MessageBox.Show("Er zijn {} niet gepinde links. Deze zijn niet gepind.".format(len(unpinned_links)), "Pin All Revit Links | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
+    else:
+        MessageBox.Show("Alle Revit links zijn al gepind.", "Pin All Revit Links | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Information)
