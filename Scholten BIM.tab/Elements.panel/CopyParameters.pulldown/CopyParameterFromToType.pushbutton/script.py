@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Copy Parameter to Parameter From/To"
+__title__ = "Copy Parameter to Parameter From/To (Type)"
 __author__ = "Scholten BIM Consultancy"
 __doc__ = """Version   = 1.2
 Datum    = 17.02.2025
@@ -62,7 +62,7 @@ t = None
 
 # Functie om parameterwaarde en opslagtype op te halen
 def get_parameter_info(element, param_name):
-    param = element.LookupParameter(param_name)
+    param = element.Symbol.LookupParameter(param_name) if element.Symbol else None
     if param:
         value = None
         if param.StorageType == StorageType.String:
@@ -78,7 +78,7 @@ def get_parameter_info(element, param_name):
 
 # Functie om parameterwaarde in te stellen
 def set_parameter_value(element, param_name, value, storage_type):
-    param = element.LookupParameter(param_name)
+    param = element.Symbol.LookupParameter(param_name) if element.Symbol else None
     if param and value is not None:
         if storage_type == StorageType.String:
             param.Set(value)
@@ -127,7 +127,6 @@ class ExcludeRevitLinks(ISelectionFilter):
     
     def AllowReference(self, reference, position):
         return True
-
 try:
     selected_params = load_parameters_from_config()
     with forms.WarningBar(title="Pick reference element"):
@@ -147,7 +146,7 @@ try:
         category_name = element.Category.Name
         for param_name, (value, storage_type) in source_values.items():
             try:
-                if element.LookupParameter(param_name):
+                if element.Symbol.LookupParameter(param_name):
                     set_parameter_value(element, param_name, value, storage_type)
                 else:
                     errors.setdefault(param_name, {}).setdefault(category_name, 0)
@@ -155,7 +154,6 @@ try:
             except Exception:
                 errors.setdefault(param_name, {}).setdefault(category_name, 0)
                 errors[param_name][category_name] += 1
-
     if errors:
         sorted_errors = sorted(errors.items())
         error_messages = ["Parameter '{}': ontbreekt in categorieën: {}.".format(param, ", ".join(["{} ({} object(en))".format(category, count) for category, count in categories.items()])) for param, categories in sorted_errors]
@@ -168,3 +166,4 @@ except OperationCanceledException:
 finally:
     if t is not None and t.HasStarted():
         t.RollBack()
+
