@@ -2,13 +2,14 @@
 
 __title__ = "Copy Parameter to Parameter From/To (Type)"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.2
-Datum    = 17.02.2025
+__doc__ = """Version   = 1.0
+Datum    = 02.04.2025
 __________________________________________________________________
 Description:
 SHIFT-CLICK to display options.
 
 Met deze tool kan je parameters van een object uit je huidige model kopieren naar andere objecten uit je huidige model. Deze parameters zullen 1-op-1 naar dezelfde parameters worden weggeschreven.
+Dit betreft alleen de Type parameters.
 Houdt de Shift knop ingedrukt bij het uitvoeren van deze actie en je kan de parameters aanpassen.
 __________________________________________________________________
 How-to:
@@ -18,9 +19,7 @@ How-to:
 __________________________________________________________________
 Last update:
 
-- [01.04.2025] - 1.2 Juiste manier van config.py gebruikt, geen veranderde werking van het script.
-- [04.03.2025] - 1.1 Update transaction & empty config file 
-- [17.02.2025] - 1.0 RELEASE
+- [02.04.2025] - 1.0 RELEASE
 __________________________________________________________________
 To-do:
 
