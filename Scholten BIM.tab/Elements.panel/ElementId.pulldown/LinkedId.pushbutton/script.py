@@ -2,8 +2,8 @@
 
 __title__ = "Get Linked Id's"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.0
-Datum    = 31.03.2025
+__doc__ = """Version   = 1.1
+Datum    = 07.04.2025
 __________________________________________________________________
 Description:
 
@@ -15,6 +15,7 @@ How-to:
 __________________________________________________________________
 Last update:
 
+- [07.04.2025] - 1.1 Toevoeging uitlezen welk linked file het betreft.
 - [31.03.2025] - 1.0 RELEASE
 __________________________________________________________________
 To-do:
@@ -41,8 +42,10 @@ def get_linked_element(doc, ref):
     if isinstance(link_instance, RevitLinkInstance):
         link_doc = link_instance.GetLinkDocument()
         link_element_id = ref.LinkedElementId
-        return link_doc.GetElement(link_element_id)
-    return None
+        linked_element = link_doc.GetElement(link_element_id)
+        link_type = link_instance.get_Parameter(BuiltInParameter.ELEM_TYPE_PARAM).AsValueString()
+        return linked_element, link_type
+    return None, None
 
 # Gelinkte bestanden ophalen
 linked_docs = FilteredElementCollector(doc).OfClass(RevitLinkInstance).ToElements()
@@ -56,17 +59,17 @@ with forms.WarningBar(title="Pick element(s)"):
         selected_refs = []
 
 # ID's van geselecteerde elementen ophalen
-selected_elements = [get_linked_element(doc, ref) for ref in selected_refs if get_linked_element(doc, ref)]
+selected_elements = [get_linked_element(doc, ref) for ref in selected_refs if get_linked_element(doc, ref)[0]]
 
 # Element-ID's weergeven met output_window in het gewenste formaat
 if selected_elements:
     output_window = output.get_output()
     output_window.print_md("##==== Linked Element Details: ====##")
-    for elem in selected_elements:
+    for elem, link_type in selected_elements:
         category = elem.Category.Name
         family_type_name_param = elem.get_Parameter(BuiltInParameter.ELEM_FAMILY_AND_TYPE_PARAM)
         family_type_name = family_type_name_param.AsValueString() if family_type_name_param else "N/A"
         linked_id = elem.Id
         output_window.print_md("**Category:** {}, **Family (Type) Name:** {}".format(category, family_type_name))
-        output_window.print_md("**Linked Element ID:** {}".format(linked_id))
+        output_window.print_md("**Linked File:** {}, **Linked Element ID:** {}".format(link_type, linked_id))
         output_window.print_md("=" * 100)
