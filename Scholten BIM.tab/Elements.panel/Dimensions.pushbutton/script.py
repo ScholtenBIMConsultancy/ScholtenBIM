@@ -2,8 +2,8 @@
 
 __title__ = "Change dimension offset"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.1
-Datum    = 14.02.2025
+__doc__ = """Version   = 1.2
+Datum    = 12.05.2025
 __________________________________________________________________
 Description:
 SHIFT CLICK
@@ -19,6 +19,7 @@ How-to:
 __________________________________________________________________
 Last update:
 
+- [12.05.2025] - 1.2 Hij past nu juist de dimensions in een section aan.
 - [25.02.2025] - 1.1 Het is nu ook mogelijk om de dimensions in een section aan te passen.
 - [14.02.2025] - 1.0 RELEASE
 __________________________________________________________________
@@ -45,6 +46,8 @@ from System.Windows.Forms import Form, Label, TextBox, Button, DialogResult, Mes
 # Actief document en view ophalen
 doc = __revit__.ActiveUIDocument.Document
 uidoc = __revit__.ActiveUIDocument
+
+view_direction = doc.ActiveView.ViewDirection
 
 # Functie om de schaal van de actieve view uit te lezen
 def get_active_view_scale(doc):
@@ -130,18 +133,23 @@ def load_distance_value():
         return None
 
 # Functie om te controleren of een dimensie horizontaal is
-def is_horizontal(dimension, view_type):
+def is_horizontal(dimension, view_type, view_direction):
     line = dimension.Curve
     if view_type == ViewType.Section:
-        return abs(line.Direction.X) > abs(line.Direction.Y) and abs(line.Direction.Y) < 0.01
+        if abs(view_direction.X) != 0:
+            return abs(line.Direction.Y) != 0
+        elif abs(view_direction.Y) != 0:
+            return abs(line.Direction.X) != 0
     else:
-        return abs(line.Direction.X) > abs(line.Direction.Y) and abs(line.Direction.Y) < 0.01
-
+        return abs(line.Direction.X) > abs(line.Direction.Y) and abs(line.Direction.Z) < 0.01
 # Functie om te controleren of een dimensie verticaal is
-def is_vertical(dimension, view_type):
+def is_vertical(dimension, view_type, view_direction):
     line = dimension.Curve
     if view_type == ViewType.Section:
-        return abs(line.Direction.Z) > abs(line.Direction.X) and abs(line.Direction.X) < 0.01
+        if abs(view_direction.Y) != 0:
+            return abs(line.Direction.Z) != 0
+        elif abs(view_direction.X) != 0:
+            return abs(line.Direction.Z) != 0
     else:
         return abs(line.Direction.Y) > abs(line.Direction.X) and abs(line.Direction.X) < 0.01
 
@@ -185,15 +193,15 @@ else:
         return view_type
 
     # Functie om een melding te geven en het script te stoppen als de dimensie niet horizontaal of verticaal is
-    def check_dimension_orientation(dimension, view_type):
-        if not (is_horizontal(dimension, view_type) or is_vertical(dimension, view_type)):
+    def check_dimension_orientation(dimension, view_type, view_direction):
+        if not (is_horizontal(dimension, view_type, view_direction) or is_vertical(dimension, view_type, view_direction)):
             MessageBox.Show("De geselecteerde dimensie is niet horizontaal of verticaal. Het script wordt beëindigd.", "Change dimension offset | Scholten BIM Consultancy", MessageBoxButtons.OK, MessageBoxIcon.Error)
             sys.exit()
 
     # Controleer de oriëntatie van elke geselecteerde dimensie
     for dimension in selected_dimensions:
         view_type = check_view_type()
-        check_dimension_orientation(dimension, view_type)
+        check_dimension_orientation(dimension, view_type, view_direction)
 
     def adjust_text_position(dimension, view_type):
         scale = get_active_view_scale(doc)  # Schaal hier ophalen
@@ -212,7 +220,7 @@ else:
     def adjust_single_segment(dimension, distance_in_feet):
         dimension.ResetTextPosition()
         text_position = dimension.TextPosition
-        if is_horizontal(dimension, ViewType.FloorPlan):
+        if is_horizontal(dimension, ViewType.FloorPlan, view_direction):
             new_position = XYZ(text_position.X, text_position.Y - distance_in_feet, text_position.Z)
         else:
             new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
@@ -223,7 +231,7 @@ else:
         for segment in dimension.Segments:
             segment.ResetTextPosition()
             text_position = segment.TextPosition
-            if is_horizontal(dimension, ViewType.FloorPlan):
+            if is_horizontal(dimension, ViewType.FloorPlan, view_direction):
                 new_position = XYZ(text_position.X, text_position.Y - distance_in_feet, text_position.Z)
             else:
                 new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
@@ -233,22 +241,51 @@ else:
     def adjust_single_segment_section(dimension, distance_in_feet):
         dimension.ResetTextPosition()
         text_position = dimension.TextPosition
-        if is_horizontal(dimension, ViewType.Section):
+
+        if is_horizontal(dimension, ViewType.Section, view_direction):
             new_position = XYZ(text_position.X, text_position.Y, text_position.Z - distance_in_feet)
         else:
-            new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
+            # Controleer de richting van de view
+            if view_direction.Y < 0:
+                new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
+            elif view_direction.Y > 0:
+                new_position = XYZ(text_position.X - distance_in_feet, text_position.Y, text_position.Z)
+            elif view_direction.X < 0:
+                new_position = XYZ(text_position.X, text_position.Y - distance_in_feet, text_position.Z)
+            elif view_direction.X > 0:
+                new_position = XYZ(text_position.X, text_position.Y + distance_in_feet, text_position.Z)
+            else:
+                # Fallback: geen richting herkend
+                new_position = text_position
+
         dimension.TextPosition = new_position
         doc.Regenerate()  # Zorg ervoor dat de nieuwe positie wordt toegepast
+        
     def adjust_multiple_segments_section(dimension, distance_in_feet):
         for segment in dimension.Segments:
             segment.ResetTextPosition()
             text_position = segment.TextPosition
-            if is_horizontal(dimension, ViewType.Section):
+
+            if is_horizontal(dimension, ViewType.Section, view_direction):
                 new_position = XYZ(text_position.X, text_position.Y, text_position.Z - distance_in_feet)
             else:
-                new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
+                # Controleer de richting van de view
+                if view_direction.Y < 0:
+                    new_position = XYZ(text_position.X + distance_in_feet, text_position.Y, text_position.Z)
+                elif view_direction.Y > 0:
+                    new_position = XYZ(text_position.X - distance_in_feet, text_position.Y, text_position.Z)
+                elif view_direction.X < 0:
+                    new_position = XYZ(text_position.X, text_position.Y - distance_in_feet, text_position.Z)
+                elif view_direction.X > 0:
+                    new_position = XYZ(text_position.X, text_position.Y + distance_in_feet, text_position.Z)
+                else:
+                    # Fallback indien geen duidelijke richting
+                    new_position = text_position
+
             segment.TextPosition = new_position
+
         doc.Regenerate()  # Zorg ervoor dat de nieuwe positie wordt toegepast
+
 
     # Gebruik de Revit transactiebeheerder
     t = Transaction(doc, "Change dimension offset")
