@@ -1,6 +1,7 @@
 layout:
   - DetailItems
   - Rotation Element
+  - Create SectionViews
   - Dimensions
   - Text Notes
   - CopyParameters
