@@ -19,7 +19,7 @@ Last update:
 __________________________________________________________________
 To-do:
 
-- 
+- Zorgen dat als de views al bestaan er of een duplicate komt of de ruimte wordt overgeslagen.
 __________________________________________________________________
 """
 
