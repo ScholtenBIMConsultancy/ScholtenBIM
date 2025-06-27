@@ -143,7 +143,7 @@ def create_elevation_view(room, direction, suffix):
         return None
 
 # Selectie UI
-with forms.WarningBar(title='Selecteer ruimte(s) in gelinkte model(len)'):
+with forms.WarningBar(title='Select Room(s)'):
     try:
         selected = uidoc.Selection.PickObjects(ObjectType.LinkedElement, 'Select Room(s)')
     except:
