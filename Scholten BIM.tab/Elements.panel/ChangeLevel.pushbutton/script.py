@@ -2,7 +2,7 @@
 
 __title__ = "Change Level"
 __author__ = "Scholten BIM Consultancy"
-__doc__ = """Version   = 1.0
+__doc__ = """Version   = 1.1
 Datum    = 14.10.2025
 __________________________________________________________________
 Description:
@@ -16,6 +16,7 @@ How-to:
 __________________________________________________________________
 Last update:
 
+- [14.10.2025] - 1.1 Elementen zonder Level parameter worden uitgesloten.
 - [14.10.2025] - 1.0 RELEASE
 __________________________________________________________________
 To-do:
@@ -48,38 +49,57 @@ if not selected_ids:
 def apply_level(level):
     """Pas het geselecteerde level toe op de geselecteerde elementen"""
     changed_count = 0
+    skipped_elements = []
+
     with revit.Transaction("Change Level", doc):
         for el_id in selected_ids:
             el = doc.GetElement(el_id)
-            if isinstance(el, FamilyInstance):
-                # Bereken offset
-                current_level = doc.GetElement(el.LevelId)
-                elevation_param = el.get_Parameter(BuiltInParameter.INSTANCE_ELEVATION_PARAM)
-                element_elev = elevation_param.AsDouble() if elevation_param else 0
-                current_elev = current_level.Elevation if current_level else 0
-                new_level_elev = level.Elevation
-                new_offset = current_elev + element_elev - new_level_elev
+            try:
+                if isinstance(el, FamilyInstance):
+                    # Bereken offset
+                    current_level = doc.GetElement(el.LevelId)
+                    elevation_param = el.get_Parameter(BuiltInParameter.INSTANCE_ELEVATION_PARAM)
+                    element_elev = elevation_param.AsDouble() if elevation_param else 0
+                    current_elev = current_level.Elevation if current_level else 0
+                    new_level_elev = level.Elevation
+                    new_offset = current_elev + element_elev - new_level_elev
 
-                # Zet level
-                level_param = el.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM)
-                if level_param:
-                    level_param.Set(level.Id)
+                    # Zet level
+                    level_param = el.get_Parameter(BuiltInParameter.FAMILY_LEVEL_PARAM)
+                    if level_param:
+                        level_param.Set(level.Id)
+                    else:
+                        raise Exception("Geen level-parameter beschikbaar")
 
-                # Zet offset
-                offset_param = el.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM)
-                if offset_param:
-                    offset_param.Set(new_offset)
+                    # Zet offset
+                    offset_param = el.get_Parameter(BuiltInParameter.INSTANCE_FREE_HOST_OFFSET_PARAM)
+                    if offset_param:
+                        offset_param.Set(new_offset)
 
-                changed_count += 1
+                    changed_count += 1
 
-            elif isinstance(el, MEPCurve):
-                el.ReferenceLevel = level
-                changed_count += 1
+                elif isinstance(el, MEPCurve):
+                    el.ReferenceLevel = level
+                    changed_count += 1
 
-            elif isinstance(el, Space):
-                point = el.Location.Point
-                newspace = doc.Create.NewSpace(level, UV(point.X, point.Y))
-                changed_count += 1
+                elif isinstance(el, Space):
+                    point = el.Location.Point
+                    newspace = doc.Create.NewSpace(level, UV(point.X, point.Y))
+                    changed_count += 1
+
+                else:
+                    skipped_elements.append(el)
+
+            except Exception:
+                # Element kan niet aangepast worden
+                skipped_elements.append(el)
+
+    # Toon melding
+    message = "{} element(en) aangepast naar level '{}'.".format(changed_count, level.Name)
+    if skipped_elements:
+        message += "\n{} element(en) konden niet aangepast worden.".format(len(skipped_elements))
+    forms.alert(message, title="Change Level | Scholten BIM Consultancy")
+
 
 #    forms.alert("{} elementen aangepast naar level '{}'".format(changed_count, level.Name))
 

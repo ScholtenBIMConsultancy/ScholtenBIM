@@ -6,12 +6,16 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         WindowStyle="SingleBorderWindow">
+
     <StackPanel Margin="10" HorizontalAlignment="Stretch">
 
         <!-- Label met aantal geselecteerde elementen -->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-            <Label x:Name="label_selection" Content="0 elementen geselecteerd" Width="200"/>
+            <Label x:Name="label_selection" Content="0 elementen geselecteerd" Width="200" FontWeight="Bold"/>
         </StackPanel>
+
+        <!-- Tekst boven pulldown -->
+        <TextBlock Text="Selecteer gewenst level:" Margin="0,0,0,5" FontWeight="Bold"/>
 
         <!-- Pulldown + Apply knop -->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
