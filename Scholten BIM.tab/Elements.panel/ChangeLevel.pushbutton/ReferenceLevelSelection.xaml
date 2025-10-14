@@ -1,7 +1,11 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Change Level | Scholten BIM Consultancy" SizeToContent="WidthAndHeight"
-        Topmost="False" WindowStartupLocation="CenterScreen">
+        Title="Change Level | Scholten BIM Consultancy"
+        SizeToContent="WidthAndHeight"
+        Topmost="False"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        WindowStyle="SingleBorderWindow">
     <StackPanel Margin="10" HorizontalAlignment="Stretch">
 
         <!-- Label met aantal geselecteerde elementen -->
