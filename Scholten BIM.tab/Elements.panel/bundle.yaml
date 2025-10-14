@@ -1,4 +1,5 @@
 layout:
+  - ChangeLevel
   - DetailItems
   - Rotation Element
   - Create SectionViews
