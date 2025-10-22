@@ -140,7 +140,7 @@ try:
         target_references = uidoc.Selection.PickObjects(ObjectType.Element, ExcludeRevitLinks(), "Selecteer de doelobjecten")
     target_elements = [doc.GetElement(ref.ElementId) for ref in target_references]
 
-    t = Transaction(doc, "Copy Parameter to Parameter From/To")
+    t = Transaction(doc, "Copy Parameter to Parameter From/To (Multipe)")
     t.Start()
 
     for element in target_elements:
