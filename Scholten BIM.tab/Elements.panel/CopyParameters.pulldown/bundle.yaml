@@ -1,5 +1,6 @@
 layout:
   - CopyParameter
-  - CopyParameterFromTo
+  - CopyParameterFromToSingle
+  - CopyParameterFromToMultiple
   - CopyParameterFromToType
   - CopyParameterLink

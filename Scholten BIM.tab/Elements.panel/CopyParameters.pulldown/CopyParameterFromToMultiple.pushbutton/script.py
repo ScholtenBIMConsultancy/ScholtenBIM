@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__title__ = "Copy Parameter to Parameter From/To"
+__title__ = "Copy Parameter to Parameter From/To (Multiple)"
 __author__ = "Scholten BIM Consultancy"
 __doc__ = """Version   = 1.2
 Datum    = 17.02.2025
