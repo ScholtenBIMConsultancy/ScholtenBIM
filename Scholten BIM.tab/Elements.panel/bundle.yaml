@@ -1,5 +1,6 @@
 layout:
   - ChangeLevel
+  - ClearMark
   - DetailItems
   - Rotation Element
   - Create SectionViews
