@@ -25,7 +25,6 @@ To-do:
 __________________________________________________________________
 """
 
-
 import clr
 clr.AddReference('PresentationFramework')
 clr.AddReference('WindowsBase')
@@ -46,12 +45,12 @@ uidoc = __revit__.ActiveUIDocument
 class LinkedIdsWindow(WPFWindow):
     def __init__(self, xaml_path, element_infos):
         WPFWindow.__init__(self, xaml_path)
-
         for i, (info_text, element_id, parts) in enumerate(element_infos):
             self.add_element_info(parts, element_id, i)
-
         self.btn_close.Click += self.close_action
         self.btn_copy_by_category.Click += self.copy_by_category_action
+        self.btn_copy_by_linkedfile.Click += self.copy_by_linkedfile_action
+        self.btn_copy_all.Click += self.copy_all_action
         self.element_infos = element_infos
 
     def add_element_info(self, parts, element_id, index):
@@ -61,14 +60,11 @@ class LinkedIdsWindow(WPFWindow):
         panel = Grid(Margin=Thickness(0, 3, 0, 3))
         panel.ColumnDefinitions.Add(ColumnDefinition())
         panel.ColumnDefinitions.Add(ColumnDefinition(Width=GridLength(220)))
-
         base_color = Brushes.WhiteSmoke if index % 2 == 1 else Brushes.Transparent
         panel.Background = base_color
 
-        def on_hover(sender, args):
-            sender.Background = Brushes.LightGray
-        def on_leave(sender, args):
-            sender.Background = base_color
+        def on_hover(sender, args): sender.Background = Brushes.LightGray
+        def on_leave(sender, args): sender.Background = base_color
         panel.MouseEnter += on_hover
         panel.MouseLeave += on_leave
 
@@ -142,12 +138,31 @@ class LinkedIdsWindow(WPFWindow):
         xaml_popup = script.get_bundle_file('SelectCategory.xaml')
         popup = SelectCategoryWindow(xaml_popup, categories)
         popup.ShowDialog()
-
         if popup.selected_category:
             ids = [str(info[2]["ID"]) for info in self.element_infos if info[2]["Category"] == popup.selected_category]
             if ids:
                 Clipboard.SetText(";".join(ids))
                 self.show_temporary_popup("Gekopieerd: {0} ID's voor '{1}'".format(len(ids), popup.selected_category), sender)
+
+    def copy_by_linkedfile_action(self, sender, args):
+        linked_files = sorted(set(info[2]["Linked File"] for info in self.element_infos))
+        xaml_popup = script.get_bundle_file('SelectCategory.xaml')
+        popup = SelectCategoryWindow(xaml_popup, linked_files)
+        popup.ShowDialog()
+        if popup.selected_category:
+            ids = [str(info[2]["ID"]) for info in self.element_infos if info[2]["Linked File"] == popup.selected_category]
+            if ids:
+                Clipboard.SetText(";".join(ids))
+                self.show_temporary_popup("Gekopieerd: {0} ID's voor linked file '{1}'".format(len(ids), popup.selected_category), sender)
+
+    def copy_all_action(self, sender, args):
+        all_text = "\n\n".join(
+            "Category: {0}\nFamily: {1}\nLinked File: {2}\nID: {3}".format(
+                parts["Category"], parts["Family"], parts["Linked File"], parts["ID"]
+            ) for _, _, parts in self.element_infos
+        )
+        Clipboard.SetText(all_text)
+        self.show_temporary_popup("Alle gegevens gekopieerd!", sender)
 
     def _make_inline(self, text, bold=False):
         from System.Windows.Documents import Run
@@ -160,16 +175,13 @@ class LinkedIdsWindow(WPFWindow):
     def close_action(self, sender, args):
         self.Close()
 
-
 class SelectCategoryWindow(WPFWindow):
     def __init__(self, xaml_path, categories):
         WPFWindow.__init__(self, xaml_path)
         for cat in categories:
             self.combo_categories.Items.Add(cat)
-
         if self.combo_categories.Items.Count > 0:
             self.combo_categories.SelectedIndex = 0
-
         self.btn_ok.Click += self.ok_action
         self.btn_cancel.Click += self.cancel_action
         self.selected_category = None
@@ -182,7 +194,7 @@ class SelectCategoryWindow(WPFWindow):
         self.selected_category = None
         self.Close()
 
-
+# Main execution
 try:
     try:
         selected_refs = uidoc.Selection.PickObjects(ObjectType.LinkedElement, "Selecteer elementen in gelinkte bestanden")
@@ -207,18 +219,17 @@ try:
             element_infos.append((None, linked_element.Id, parts))
 
     xaml_path = script.get_bundle_file('LinkedIds.xaml')
-
     if not xaml_path:
         MessageBox.Show(
             "LinkedIds.xaml niet gevonden in de bundle.\nZorg dat LinkedIds.xaml in dezelfde map staat als dit script.",
-            "Linked IDs | Scholten BIM Consultancy",
+            "Linked IDs \n Scholten BIM Consultancy",
             MessageBoxButtons.OK,
             MessageBoxIcon.Warning
         )
     elif not element_infos:
         MessageBox.Show(
             "Geen gekoppelde elementen gevonden.",
-            "Linked IDs | Scholten BIM Consultancy",
+            "Linked IDs \n Scholten BIM Consultancy",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information
         )
@@ -228,7 +239,7 @@ try:
 except Exception as ex:
     MessageBox.Show(
         "Er ging iets mis:\n\n{0}\n\nTraceback:\n{1}".format(ex, traceback.format_exc()),
-        "Linked IDs | Scholten BIM Consultancy",
+        "Linked IDs \n Scholten BIM Consultancy",
         MessageBoxButtons.OK,
         MessageBoxIcon.Error
     )

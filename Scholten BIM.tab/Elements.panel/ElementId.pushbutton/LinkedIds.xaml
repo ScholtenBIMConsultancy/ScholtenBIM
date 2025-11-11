@@ -22,9 +22,11 @@
             <StackPanel x:Name="elementList" Orientation="Vertical" />
         </ScrollViewer>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-            <Button x:Name="btn_copy_by_category" Content="Kopieer ID's per categorie" Width="180" Height="30" Margin="0,0,10,0"/>
-            <Button x:Name="btn_close" Content="Sluiten" Width="100" Height="30"/>
-        </StackPanel>
+		<StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+			<Button x:Name="btn_copy_by_category" Content="Kopieer ID's per categorie" Width="180" Height="30" Margin="0,0,10,0"/>
+			<Button x:Name="btn_copy_by_linkedfile" Content="Kopieer ID's per linked file" Width="200" Height="30" Margin="0,0,10,0"/>
+			<Button x:Name="btn_copy_all" Content="Kopieer alles" Width="150" Height="30" Margin="0,0,10,0"/>
+			<Button x:Name="btn_close" Content="Sluiten" Width="100" Height="30"/>
+		</StackPanel>
     </Grid>
 </Window>
