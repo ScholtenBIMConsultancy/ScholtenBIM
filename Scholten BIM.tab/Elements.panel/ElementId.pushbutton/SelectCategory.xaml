@@ -1,0 +1,23 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Selecteer categorie"
+        Height="150" Width="300"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#FFFDFDFD"
+        FontSize="12">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Kies een categorie:" Margin="0,0,0,10"/>
+        <ComboBox x:Name="combo_categories" Grid.Row="1" Width="250" Margin="0,0,0,10"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="btn_ok" Content="OK" Width="80" Margin="0,0,10,0"/>
+            <Button x:Name="btn_cancel" Content="Annuleer" Width="80"/>
+        </StackPanel>
+    </Grid>
+</Window>
